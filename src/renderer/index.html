@@ -440,15 +440,18 @@ body {
     if (window.api) window.api.saveNotes(notes);
   }
 
-  async function loadNotes() {
-    if (!window.api) { spawnNote(); return; }
-    const saved = await window.api.loadNotes();
-    if (saved && saved.length > 0) {
-      saved.forEach(n => spawnNote(n));
-    } else {
-      spawnNote();
-    }
+async function loadNotes() {
+  const area = document.getElementById('notesArea');
+  area.innerHTML = '';
+  noteCount = 0;
+  if (!window.api) { spawnNote(); return; }
+  const saved = await window.api.loadNotes();
+  if (saved && saved.length > 0) {
+    saved.forEach(n => spawnNote(n));
+  } else {
+    spawnNote();
   }
+}
 
   // ── Transitions ──
   document.getElementById('startBtn').addEventListener('click', () => {
