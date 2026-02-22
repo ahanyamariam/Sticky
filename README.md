@@ -1,6 +1,6 @@
 # sticky
 
-An Electron application with React and TypeScript
+A retro pixel-art sticky notes desktop app built with Electron, featuring draggable notes, pastel color themes, todo lists, sound effects, and local persistence
 
 ## Recommended IDE Setup
 
