@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sticky</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; image-rendering: pixelated; }
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  font-family: 'Press Start 2P', monospace;
+  -webkit-app-region: no-drag;
+  overflow: hidden;
+}
+
+.app-window {
+  width: 100vw;
+  height: 100vh;
+  background: #8C52FE;
+  position: relative;
+  border: 4px solid #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    inset 4px 4px 0 0 #fff,
+    inset -4px -4px 0 0 #613BB5;
+}
+
+  /* ── Home screen ── */
+  .home-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 32px;
+  }
+
+  .app-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 42px;
+    color: #fff;
+    letter-spacing: 6px;
+    text-shadow:
+      4px 4px 0 #613BB5,
+      8px 8px 0 rgba(0,0,0,0.3);
+  }
+
+  /* ── Start Button ── */
+  .start-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    color: #A445F7;
+    background: #FFC3EA;
+    border: 3px solid #000;
+    padding: 14px 48px;
+    cursor: pointer;
+    letter-spacing: 4px;
+    box-shadow:
+      inset 2px 2px 0 0 rgba(255,255,255,0.7),
+      inset -2px -2px 0 0 rgba(0,0,0,0.2),
+      4px 4px 0 0 #000;
+    transition: transform 0.05s, box-shadow 0.05s;
+    outline: none;
+    position: relative;
+  }
+
+  .start-btn:hover { background: #ffb0e4; }
+
+  .start-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow:
+      inset 2px 2px 0 0 rgba(0,0,0,0.2),
+      inset -2px -2px 0 0 rgba(255,255,255,0.5),
+      1px 1px 0 0 #000;
+  }
+
+  /* ── Canvas ── */
+  .canvas-screen {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .canvas-screen.active { display: block; }
+
+  .toolbar {
+    width: 100%;
+    height: 36px;
+    background: #613BB5;
+    border-bottom: 3px solid #000;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .toolbar-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: #fff;
+    flex: 1;
+    letter-spacing: 2px;
+  }
+
+  .toolbar-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: #A445F7;
+    background: #FFC3EA;
+    border: 2px solid #000;
+    padding: 4px 8px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #000;
+    outline: none;
+    letter-spacing: 1px;
+  }
+  .toolbar-btn:active {
+    transform: translate(2px,2px);
+    box-shadow: none;
+  }
+
+  .notes-area {
+    width: 100%;
+    height: calc(100% - 36px);
+    position: relative;
+    background-image: radial-gradient(circle, #7040d0 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* ── Sticky Note ── */
+  .sticky-note {
+    position: absolute;
+    width: 180px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    cursor: grab;
+    user-select: none;
+    animation: notePopIn 0.2s steps(4) forwards;
+  }
+
+  .sticky-note:active { cursor: grabbing; }
+
+  @keyframes notePopIn {
+    0%   { transform: scale(0) rotate(-5deg); opacity: 0; }
+    40%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
+    70%  { transform: scale(0.95) rotate(-1deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  @keyframes noteDelete {
+    0%   { transform: scale(1); opacity: 1; }
+    50%  { transform: scale(1.1) rotate(5deg); opacity: 0.5; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  .note-deleting {
+    animation: noteDelete 0.2s steps(4) forwards !important;
+  }
+
+  .note-titlebar {
+    height: 28px;
+    border-bottom: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  .note-titlebar-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border: 2px solid #000;
+    background: rgba(255,255,255,0.5);
+  }
+
+  .note-titlebar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .note-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: #000;
+    padding: 0 2px;
+    line-height: 1;
+  }
+
+  /* ── Todo toggle button ── */
+  .note-todo-btn {
+    background: rgba(255,255,255,0.3);
+    border: 2px solid #000;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #000;
+    padding: 2px 4px;
+    line-height: 1;
+  }
+
+  .note-todo-btn.active {
+    background: #000;
+    color: #fff;
+  }
+
+  .note-body {
+    flex: 1;
+    padding: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: #333;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    width: 100%;
+    min-height: 100px;
+    flex: 1;
+  }
+
+  .note-body::placeholder {
+    color: rgba(0,0,0,0.3);
+    font-family: 'VT323', monospace;
+  }
+
+  /* ── Todo list area ── */
+  .note-todos {
+    display: none;
+    flex-direction: column;
+    padding: 6px 8px;
+    gap: 4px;
+    min-height: 80px;
+    flex: 1;
+  }
+
+  .note-todos.visible { display: flex; }
+
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    -webkit-app-region: no-drag;
+  }
+
+  .todo-checkbox {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #000;
+    background: rgba(255,255,255,0.5);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .todo-checkbox.checked {
+    background: #000;
+    color: #fff;
+  }
+
+  .todo-text {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: #333;
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+  }
+
+  .todo-text.done {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+
+  .todo-add-input {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: #333;
+    background: transparent;
+    border: none;
+    border-top: 1px dashed rgba(0,0,0,0.2);
+    outline: none;
+    width: 100%;
+    padding: 4px 0;
+    margin-top: 2px;
+  }
+
+  .todo-add-input::placeholder { color: rgba(0,0,0,0.25); }
+
+  /* color swatch strip */
+  .note-colors {
+    display: flex;
+    border-top: 2px solid #000;
+    height: 18px;
+  }
+
+  .note-color-swatch {
+    flex: 1;
+    cursor: pointer;
+    border: none;
+    border-right: 1px solid #000;
+    transition: none;
+    -webkit-app-region: no-drag;
+  }
+  .note-color-swatch:last-child { border-right: none; }
+  .note-color-swatch:hover { filter: brightness(1.1); }
+
+  .home-screen.hidden { display: none; }
+
+  button, textarea, input { -webkit-app-region: no-drag; }
+</style>
+</head>
+<body>
+
+<div class="app-window" id="appWindow">
+
+  <!-- HOME SCREEN -->
+  <div class="home-screen" id="homeScreen">
+    <div class="app-title">STICKY</div>
+    <button class="start-btn" id="startBtn">START</button>
+  </div>
+
+  <!-- CANVAS SCREEN -->
+  <div class="canvas-screen" id="canvasScreen">
+    <div class="toolbar">
+      <span class="toolbar-title">✦ STICKY NOTES ✦</span>
+      <button class="toolbar-btn" id="newNoteBtn">+ NOTE</button>
+      <button class="toolbar-btn" id="backBtn">⌂ HOME</button>
+    </div>
+    <div class="notes-area" id="notesArea"></div>
+  </div>
+</div>
+
+<script>
+  const NOTE_COLORS = ['#F9E784','#FFC3EA','#A8E6CF','#C9B1FF','#FFD0A8'];
+  const SWATCH_LABELS = ['YLW','PNK','MNT','LVN','PCH'];
+  let noteCount = 0;
+  let dragging = null;
+  let dragOffX = 0, dragOffY = 0;
+
+  // ── Web Audio API sound effects (no files needed) ──
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+
+  function getAudio() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    return audioCtx;
+  }
+
+  function playBlip() {
+    // soft pop when note is created or todo added
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(660, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  }
+
+  function playDelete() {
+    // descending pop when note is deleted
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  }
+
+  function playCheck() {
+    // satisfying tick when task is checked off
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(780, ctx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.1);
+  }
+
+  function playUncheck() {
+    // reverse tick when task is unchecked
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(780, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.1);
+  }
+
+  // ── Save / Load ──
+  function saveNotes() {
+    const notes = [...document.querySelectorAll('.sticky-note')].map(note => {
+      const todos = [...note.querySelectorAll('.todo-item')].map(item => ({
+        text: item.querySelector('.todo-text').value,
+        done: item.querySelector('.todo-checkbox').classList.contains('checked'),
+      }));
+      return {
+        color: note.style.background,
+        titlebarColor: note.querySelector('.note-titlebar').style.background,
+        text: note.querySelector('.note-body').value,
+        x: note.style.left,
+        y: note.style.top,
+        tilt: note.style.transform,
+        zIndex: note.style.zIndex,
+        todoMode: note.dataset.todoMode === 'true',
+        todos,
+      };
+    });
+    if (window.api) window.api.saveNotes(notes);
+  }
+
+  async function loadNotes() {
+    if (!window.api) { spawnNote(); return; }
+    const saved = await window.api.loadNotes();
+    if (saved && saved.length > 0) {
+      saved.forEach(n => spawnNote(n));
+    } else {
+      spawnNote();
+    }
+  }
+
+  // ── Transitions ──
+  document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('homeScreen').classList.add('hidden');
+    document.getElementById('canvasScreen').classList.add('active');
+    loadNotes();
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    document.getElementById('canvasScreen').classList.remove('active');
+    document.getElementById('homeScreen').classList.remove('hidden');
+  });
+
+  document.getElementById('newNoteBtn').addEventListener('click', () => spawnNote());
+
+  // ── Spawn Note ──
+  function spawnNote(saved = null) {
+    const area = document.getElementById('notesArea');
+    const areaW = area.offsetWidth;
+    const areaH = area.offsetHeight;
+
+    const note = document.createElement('div');
+    note.className = 'sticky-note';
+
+    const color = saved?.color || NOTE_COLORS[noteCount % NOTE_COLORS.length];
+    note.style.background = color;
+
+    const x = saved ? null : Math.floor(Math.random() * (areaW - 220)) + 10;
+    const y = saved ? null : Math.floor(Math.random() * (areaH - 200)) + 10;
+    note.style.left      = saved?.x     || x + 'px';
+    note.style.top       = saved?.y     || y + 'px';
+    note.style.zIndex    = saved?.zIndex || ++noteCount;
+    note.style.transform = saved?.tilt  || `rotate(${(Math.random() * 6 - 3).toFixed(1)}deg)`;
+    if (!saved) noteCount++;
+
+    const titlebarBg = saved?.titlebarColor || darken(color);
+    const isTodoMode = saved?.todoMode || false;
+    note.dataset.todoMode = isTodoMode;
+
+    note.innerHTML = `
+      <div class="note-titlebar" style="background:${titlebarBg}">
+        <div class="note-titlebar-dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="note-titlebar-actions">
+          <button class="note-todo-btn ${isTodoMode ? 'active' : ''}" title="Toggle todo mode">☑</button>
+          <button class="note-delete-btn">✕</button>
+        </div>
+      </div>
+      <textarea class="note-body" placeholder="type here..." style="${isTodoMode ? 'display:none' : ''}"></textarea>
+      <div class="note-todos ${isTodoMode ? 'visible' : ''}">
+        <input class="todo-add-input" placeholder="+ add task, press enter" type="text"/>
+      </div>
+      <div class="note-colors">
+        ${NOTE_COLORS.map((c,i) => `<button class="note-color-swatch" style="background:${c}" title="${SWATCH_LABELS[i]}"></button>`).join('')}
+      </div>
+    `;
+
+    // Restore text
+    if (saved?.text) note.querySelector('.note-body').value = saved.text;
+
+    // Restore todos
+    if (saved?.todos && saved.todos.length > 0) {
+      saved.todos.forEach(t => addTodoItem(note, t.text, t.done));
+    }
+
+    // Auto-save on typing
+    note.querySelector('.note-body').addEventListener('input', saveNotes);
+
+    // ── Todo toggle ──
+    const todoBtn  = note.querySelector('.note-todo-btn');
+    const noteBody = note.querySelector('.note-body');
+    const todosArea = note.querySelector('.note-todos');
+
+todoBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playBlip();  // ← add this line
+  const isNowTodo = note.dataset.todoMode !== 'true';
+  note.dataset.todoMode = isNowTodo;
+  todoBtn.classList.toggle('active', isNowTodo);
+  noteBody.style.display = isNowTodo ? 'none' : '';
+  todosArea.classList.toggle('visible', isNowTodo);
+  saveNotes();
+});
+    // ── Add todo on Enter ──
+    const addInput = note.querySelector('.todo-add-input');
+    addInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const text = addInput.value.trim();
+        if (text) {
+          addTodoItem(note, text, false);
+          addInput.value = '';
+          saveNotes();
+          playBlip();
+        }
+      }
+    });
+
+    // ── Delete ──
+    note.querySelector('.note-delete-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      playDelete();
+      note.classList.add('note-deleting');
+      note.addEventListener('animationend', () => { note.remove(); saveNotes(); }, { once: true });
+    });
+
+    // ── Color swatches ──
+    note.querySelectorAll('.note-color-swatch').forEach((swatch, i) => {
+      swatch.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const c = NOTE_COLORS[i];
+        note.style.background = c;
+        note.querySelector('.note-titlebar').style.background = darken(c);
+        saveNotes();
+      });
+    });
+
+    // ── Drag ──
+    note.addEventListener('mousedown', (e) => {
+      if (['TEXTAREA','BUTTON','INPUT'].includes(e.target.tagName)) return;
+      if (e.target.classList.contains('todo-text') || e.target.classList.contains('todo-checkbox')) return;
+      dragging = note;
+      dragOffX = e.clientX - note.getBoundingClientRect().left;
+      dragOffY = e.clientY - note.getBoundingClientRect().top;
+      note.style.zIndex = ++noteCount;
+      note.style.transform = `rotate(0deg)`;
+      e.preventDefault();
+    });
+
+    area.appendChild(note);
+    if (!saved) playBlip();
+  }
+
+  // ── Add a todo item to a note ──
+  function addTodoItem(note, text, done) {
+    const todosArea = note.querySelector('.note-todos');
+    const addInput  = note.querySelector('.todo-add-input');
+
+    const item = document.createElement('div');
+    item.className = 'todo-item';
+    item.innerHTML = `
+      <div class="todo-checkbox ${done ? 'checked' : ''}">${done ? '✓' : ''}</div>
+      <input class="todo-text ${done ? 'done' : ''}" value="${text.replace(/"/g, '&quot;')}" type="text"/>
+    `;
+
+    const checkbox = item.querySelector('.todo-checkbox');
+    const todoText = item.querySelector('.todo-text');
+
+    checkbox.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isDone = !checkbox.classList.contains('checked');
+      checkbox.classList.toggle('checked', isDone);
+      checkbox.textContent = isDone ? '✓' : '';
+      todoText.classList.toggle('done', isDone);
+      isDone ? playCheck() : playUncheck();
+      saveNotes();
+    });
+
+    todoText.addEventListener('input', saveNotes);
+    todosArea.insertBefore(item, addInput);
+  }
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const area = document.getElementById('notesArea');
+    const rect = area.getBoundingClientRect();
+    let nx = e.clientX - rect.left - dragOffX;
+    let ny = e.clientY - rect.top  - dragOffY;
+    nx = Math.max(0, Math.min(nx, area.offsetWidth  - dragging.offsetWidth));
+    ny = Math.max(0, Math.min(ny, area.offsetHeight - dragging.offsetHeight));
+    dragging.style.left = nx + 'px';
+    dragging.style.top  = ny + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = null; saveNotes(); }
+  });
+
+  function darken(hex) {
+    let r = parseInt(hex.slice(1,3),16);
+    let g = parseInt(hex.slice(3,5),16);
+    let b = parseInt(hex.slice(5,7),16);
+    r = Math.max(0, r-30); g = Math.max(0, g-30); b = Math.max(0, b-30);
+    return `rgb(${r},${g},${b})`;
+  }
+</script>
+</body>
+</html>
