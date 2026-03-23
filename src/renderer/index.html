@@ -31,7 +31,6 @@ body {
     inset -4px -4px 0 0 #613BB5;
 }
 
-  /* ── Home screen ── */
   .home-screen {
     width: 100%;
     height: 100%;
@@ -53,7 +52,6 @@ body {
       8px 8px 0 rgba(0,0,0,0.3);
   }
 
-  /* ── Start Button ── */
   .start-btn {
     font-family: 'Press Start 2P', monospace;
     font-size: 16px;
@@ -82,7 +80,6 @@ body {
       1px 1px 0 0 #000;
   }
 
-  /* ── Canvas ── */
   .canvas-screen {
     display: none;
     width: 100%;
@@ -137,7 +134,6 @@ body {
     background-size: 20px 20px;
   }
 
-  /* ── Sticky Note ── */
   .sticky-note {
     position: absolute;
     width: 180px;
@@ -209,7 +205,6 @@ body {
     line-height: 1;
   }
 
-  /* ── Todo toggle button ── */
   .note-todo-btn {
     background: rgba(255,255,255,0.3);
     border: 2px solid #000;
@@ -238,7 +233,6 @@ body {
     resize: none;
     width: 100%;
     min-height: 100px;
-    flex: 1;
   }
 
   .note-body::placeholder {
@@ -246,7 +240,6 @@ body {
     font-family: 'VT323', monospace;
   }
 
-  /* ── Todo list area ── */
   .note-todos {
     display: none;
     flex-direction: column;
@@ -310,11 +303,11 @@ body {
     width: 100%;
     padding: 4px 0;
     margin-top: 2px;
+    -webkit-app-region: no-drag;
   }
 
   .todo-add-input::placeholder { color: rgba(0,0,0,0.25); }
 
-  /* color swatch strip */
   .note-colors {
     display: flex;
     border-top: 2px solid #000;
@@ -365,17 +358,14 @@ body {
   let dragging = null;
   let dragOffX = 0, dragOffY = 0;
 
-  // ── Web Audio API sound effects (no files needed) ──
+  // ── Audio ──
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let audioCtx = null;
-
   function getAudio() {
     if (!audioCtx) audioCtx = new AudioCtx();
     return audioCtx;
   }
-
   function playBlip() {
-    // soft pop when note is created or todo added
     const ctx = getAudio();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -388,9 +378,7 @@ body {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
   }
-
   function playDelete() {
-    // descending pop when note is deleted
     const ctx = getAudio();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -403,9 +391,7 @@ body {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
   }
-
   function playCheck() {
-    // satisfying tick when task is checked off
     const ctx = getAudio();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -418,9 +404,7 @@ body {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.1);
   }
-
   function playUncheck() {
-    // reverse tick when task is unchecked
     const ctx = getAudio();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -516,45 +500,42 @@ body {
       </div>
       <textarea class="note-body" placeholder="type here..." style="${isTodoMode ? 'display:none' : ''}"></textarea>
       <div class="note-todos ${isTodoMode ? 'visible' : ''}">
-        <input class="todo-add-input" placeholder="+ add task, press enter" type="text"/>
+        <input class="todo-add-input" placeholder="add task, press enter" type="text"/>
       </div>
       <div class="note-colors">
         ${NOTE_COLORS.map((c,i) => `<button class="note-color-swatch" style="background:${c}" title="${SWATCH_LABELS[i]}"></button>`).join('')}
       </div>
     `;
 
-    // Restore text
     if (saved?.text) note.querySelector('.note-body').value = saved.text;
-
-    // Restore todos
     if (saved?.todos && saved.todos.length > 0) {
       saved.todos.forEach(t => addTodoItem(note, t.text, t.done));
     }
 
-    // Auto-save on typing
     note.querySelector('.note-body').addEventListener('input', saveNotes);
 
     // ── Todo toggle ──
-    const todoBtn  = note.querySelector('.note-todo-btn');
-    const noteBody = note.querySelector('.note-body');
+    const todoBtn   = note.querySelector('.note-todo-btn');
+    const noteBody  = note.querySelector('.note-body');
     const todosArea = note.querySelector('.note-todos');
 
-todoBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  playBlip();  // ← add this line
-  const isNowTodo = note.dataset.todoMode !== 'true';
-  note.dataset.todoMode = isNowTodo;
-  todoBtn.classList.toggle('active', isNowTodo);
-  noteBody.style.display = isNowTodo ? 'none' : '';
-  todosArea.classList.toggle('visible', isNowTodo);
-  saveNotes();
-});
-    // ── Add todo on Enter ──
+    todoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playBlip();
+      const isNowTodo = note.dataset.todoMode !== 'true';
+      note.dataset.todoMode = isNowTodo;
+      todoBtn.classList.toggle('active', isNowTodo);
+      noteBody.style.display = isNowTodo ? 'none' : '';
+      todosArea.classList.toggle('visible', isNowTodo);
+      saveNotes();
+    });
+
+    // ── Add todo on Enter from the bottom input ──
     const addInput = note.querySelector('.todo-add-input');
     addInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        const text = addInput.value.trim();
+        const text = addInput.value.trim().replace(/^\+\s*/, '');
         if (text) {
           addTodoItem(note, text, false);
           addInput.value = '';
@@ -564,7 +545,7 @@ todoBtn.addEventListener('click', (e) => {
       }
     });
 
-    // ── Delete ──
+    // ── Delete note ──
     note.querySelector('.note-delete-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       playDelete();
@@ -585,13 +566,13 @@ todoBtn.addEventListener('click', (e) => {
 
     // ── Drag ──
     note.addEventListener('mousedown', (e) => {
-      if (['TEXTAREA','BUTTON','INPUT'].includes(e.target.tagName)) return;
-      if (e.target.classList.contains('todo-text') || e.target.classList.contains('todo-checkbox')) return;
+      if (['TEXTAREA', 'BUTTON', 'INPUT'].includes(e.target.tagName)) return;
+      if (e.target.classList.contains('todo-checkbox')) return;
       dragging = note;
       dragOffX = e.clientX - note.getBoundingClientRect().left;
       dragOffY = e.clientY - note.getBoundingClientRect().top;
       note.style.zIndex = ++noteCount;
-      note.style.transform = `rotate(0deg)`;
+      note.style.transform = 'rotate(0deg)';
       e.preventDefault();
     });
 
@@ -599,8 +580,9 @@ todoBtn.addEventListener('click', (e) => {
     if (!saved) playBlip();
   }
 
-  // ── Add a todo item to a note ──
-  function addTodoItem(note, text, done) {
+  // ── Add todo item ──
+  // insertAfterItem: if provided, new item is inserted after this element (for mid-list Enter)
+  function addTodoItem(note, text, done, insertAfterItem = null) {
     const todosArea = note.querySelector('.note-todos');
     const addInput  = note.querySelector('.todo-add-input');
 
@@ -625,9 +607,44 @@ todoBtn.addEventListener('click', (e) => {
     });
 
     todoText.addEventListener('input', saveNotes);
-    todosArea.insertBefore(item, addInput);
+
+    // ── Single keydown handler for todo text ──
+    todoText.addEventListener('keydown', (e) => {
+
+      // Enter: insert a new blank task right after this one
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const newItem = addTodoItem(note, '', false, item);
+        newItem.querySelector('.todo-text').focus();
+        saveNotes();
+        playBlip();
+      }
+
+      // Backspace on empty: delete this item and focus previous
+if (e.key === 'Backspace' && todoText.value === '') {
+  e.preventDefault();
+  const allInputs = [...todosArea.querySelectorAll('.todo-text, .todo-add-input')];
+  const idx = allInputs.indexOf(todoText);
+  const prev = allInputs[idx - 1] || null;
+  item.remove();
+  saveNotes();
+  if (prev) setTimeout(() => prev.focus(), 0);
+}
+    });
+
+    // Insert after a specific item, or before addInput if none specified
+    if (insertAfterItem && insertAfterItem.nextSibling) {
+      todosArea.insertBefore(item, insertAfterItem.nextSibling);
+    } else if (insertAfterItem) {
+      todosArea.insertBefore(item, addInput);
+    } else {
+      todosArea.insertBefore(item, addInput);
+    }
+
+    return item;
   }
 
+  // ── Global drag handlers ──
   document.addEventListener('mousemove', (e) => {
     if (!dragging) return;
     const area = document.getElementById('notesArea');
