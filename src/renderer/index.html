@@ -452,12 +452,14 @@ body {
 
   // ── Transitions ──
   document.getElementById('startBtn').addEventListener('click', () => {
+     playBlip();
     document.getElementById('homeScreen').classList.add('hidden');
     document.getElementById('canvasScreen').classList.add('active');
     loadNotes();
   });
 
   document.getElementById('backBtn').addEventListener('click', () => {
+    playBlip();
     document.getElementById('canvasScreen').classList.remove('active');
     document.getElementById('homeScreen').classList.remove('hidden');
   });
